@@ -6,15 +6,29 @@ import (
 )
 
 type InspectorService struct {
-	analyzer domain.ImageAnalyzer
+	analyzer  domain.ImageAnalyzer
+	fileUtils domain.FileUtils
 }
 
-func NewInspectorService(analyzer domain.ImageAnalyzer) *InspectorService {
-	return &InspectorService{analyzer: analyzer}
+func NewInspectorService(analyzer domain.ImageAnalyzer, fileUtils domain.FileUtils) *InspectorService {
+	return &InspectorService{
+		analyzer:  analyzer,
+		fileUtils: fileUtils,
+	}
 }
 
-func (s *InspectorService) Inspect(file multipart.File) (*domain.CarConditionResp, error) {
-	analyzeRes, err := s.analyzer.Analyze(file)
+func (s *InspectorService) Inspect(file *multipart.FileHeader) (*domain.CarConditionResp, error) {
+	err := s.fileUtils.ValidateImage(file)
+	if err != nil {
+		return nil, err
+	}
+
+	imageData, err := s.fileUtils.FileHeaderToBytes(file)
+	if err != nil {
+		return nil, err
+	}
+
+	analyzeRes, err := s.analyzer.Analyze(imageData)
 	if err != nil {
 		return nil, err
 	}
